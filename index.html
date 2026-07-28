@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MTA Músicas — Sintoniza sua rádio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0b0a0d;
+    --surface: #161318;
+    --surface-2: #1f1a22;
+    --pink: #ff2d8a;
+    --pink-soft: #ff9dc4;
+    --pink-dim: #7a1f4a;
+    --text: #f6eef2;
+    --muted: #9a8f96;
+    --line: #2a232b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255,45,138,0.18), transparent 60%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px);
+    pointer-events:none;
+    z-index:0;
+  }
+
+  header{
+    position:relative; z-index:1;
+    padding: 28px 6vw 20px;
+    display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--line);
+  }
+  .logo{
+    font-family:'Anton', sans-serif;
+    font-size: 26px;
+    letter-spacing: 1px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .logo .dot{
+    width:10px;height:10px;border-radius:50%;
+    background: var(--pink);
+    box-shadow: 0 0 12px 3px rgba(255,45,138,0.7);
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{ opacity:1; transform:scale(1);}
+    50%{ opacity:.4; transform:scale(0.7);}
+  }
+  .freq{
+    font-family:'JetBrains Mono', monospace;
+    color: var(--pink-soft);
+    font-size:13px;
+    letter-spacing: 2px;
+  }
+
+  /* HERO / TUNER */
+  .hero{
+    position:relative; z-index:1;
+    padding: 60px 6vw 40px;
+    text-align:center;
+  }
+  .hero h1{
+    font-family:'Anton', sans-serif;
+    font-size: clamp(38px, 7vw, 84px);
+    line-height: 0.95;
+    letter-spacing: 0.5px;
+    background: linear-gradient(180deg, #ffffff 0%, var(--pink-soft) 60%, var(--pink) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero p.sub{
+    margin-top:14px;
+    color: var(--muted);
+    font-size: 15px;
+    max-width: 520px;
+    margin-left:auto; margin-right:auto;
+  }
+
+  .search-wrap{
+    margin: 34px auto 0;
+    max-width: 640px;
+    position:relative;
+  }
+  .search-wrap input{
+    width:100%;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 18px 60px 18px 26px;
+    color: var(--text);
+    font-size: 15px;
+    outline:none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .search-wrap input::placeholder{ color: var(--muted); }
+  .search-wrap input:focus{
+    border-color: var(--pink);
+    box-shadow: 0 0 0 4px rgba(255,45,138,0.12);
+  }
+  .search-wrap button{
+    position:absolute; right:6px; top:6px; bottom:6px;
+    width:52px;
+    border:none; border-radius:999px;
+    background: var(--pink);
+    color:#1a0410;
+    cursor:pointer;
+    font-size:18px;
+    display:flex; align-items:center; justify-content:center;
+    transition: transform .15s, background .15s;
+  }
+  .search-wrap button:hover{ transform: scale(1.05); background: var(--pink-soft); }
+
+  /* TUNER DIAL - signature element */
+  .tuner{
+    position:relative; z-index:1;
+    max-width: 900px;
+    margin: 56px auto 0;
+    padding: 0 6vw;
+  }
+  .tuner-track{
+    position:relative;
+    height: 76px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow:hidden;
+    display:flex;
+    align-items:stretch;
+  }
+  .tuner-track::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image: repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 24px);
+    opacity:.6;
+  }
+  .cat-btn{
+    position:relative;
+    flex:1;
+    border:none;
+    background: transparent;
+    color: var(--muted);
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:4px;
+    transition: color .2s;
+    z-index:1;
+  }
+  .cat-btn .khz{ font-size:10px; opacity:.7; }
+  .cat-btn.active{ color: #fff; }
+  .cat-btn:hover{ color: var(--pink-soft); }
+  .needle{
+    position:absolute;
+    top:6px; bottom:6px;
+    width: calc(100% / 6);
+    background: linear-gradient(180deg, rgba(255,45,138,0.35), rgba(255,45,138,0.08));
+    border: 1px solid var(--pink);
+    border-radius: 10px;
+    transition: left .35s cubic-bezier(.65,.05,.36,1);
+    z-index:0;
+  }
+
+  /* SECTION */
+  main{ position:relative; z-index:1; padding: 56px 6vw 100px; max-width: 1180px; margin:0 auto; }
+  .section-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom: 22px;
+    border-bottom:1px solid var(--line);
+    padding-bottom: 14px;
+  }
+  .section-head h2{
+    font-family:'Anton', sans-serif;
+    font-size: 28px;
+    letter-spacing:.5px;
+  }
+  .section-head span{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--pink-soft);
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  @media (max-width: 720px){ .grid{ grid-template-columns: 1fr; } }
+
+  .track{
+    display:flex; align-items:center; gap:10px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 16px;
+    text-decoration:none;
+    color: var(--text);
+    transition: border-color .2s, background .2s, transform .15s;
+  }
+  .track:hover{
+    border-color: var(--pink-dim);
+    background: var(--surface-2);
+  }
+  .rank{
+    font-family:'Anton', sans-serif;
+    font-size: 22px;
+    color: var(--pink-dim);
+    width: 32px;
+    text-align:center;
+    flex-shrink:0;
+  }
+  .track:hover .rank{ color: var(--pink); }
+  .track-info{ flex:1; min-width:0; cursor:pointer; }
+  .track-info .name{ font-weight:600; font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .track-info .artist{ color: var(--muted); font-size:12.5px; margin-top:2px; }
+  .icon-btn{
+    width:34px; height:34px; border-radius:50%;
+    border: none;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    font-size: 12px;
+    cursor:pointer;
+    transition: background .2s, color .2s, transform .1s;
+  }
+  .play-ic{ background: var(--pink-dim); color:#1a0410; }
+  .track:hover .play-ic{ background: var(--pink); }
+  .copy-ic{ background: var(--surface-2); color: var(--pink-soft); border:1px solid var(--line); font-size:13px; }
+  .copy-ic:hover{ border-color: var(--pink); background: var(--pink-dim); color:#fff; }
+  .copy-ic.copied{ background:#4ade80; color:#052e16; border-color:#4ade80; }
+  .copy-ic:active{ transform: scale(0.92); }
+
+  footer{
+    position:relative; z-index:1;
+    text-align:center;
+    padding: 30px 6vw 40px;
+    color: var(--muted);
+    font-size: 12px;
+    border-top:1px solid var(--line);
+  }
+  footer b{ color: var(--pink-soft); }
+
+  .note{
+    max-width: 900px; margin: 0 auto 30px;
+    background: var(--surface);
+    border:1px dashed var(--pink-dim);
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height:1.6;
+  }
+  .note b{ color: var(--pink-soft); }
+
+  /* GERADOR DE COMANDO */
+  .generator{
+    max-width: 900px; margin: 0 auto 40px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 22px 24px;
+  }
+  .generator h3{
+    font-family:'Anton', sans-serif;
+    font-size: 18px;
+    letter-spacing:.5px;
+    margin-bottom: 4px;
+  }
+  .generator p{ color: var(--muted); font-size: 12.5px; margin-bottom: 16px; }
+  .gen-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .gen-row select, .gen-row input{
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 12px 14px;
+    font-size: 13.5px;
+    font-family:'JetBrains Mono', monospace;
+    outline:none;
+  }
+  .gen-row select{ flex: 0 0 150px; }
+  .gen-row input{ flex: 1; min-width: 200px; }
+  .gen-row input:focus, .gen-row select:focus{ border-color: var(--pink); }
+  .gen-row button{
+    flex: 0 0 auto;
+    border:none; border-radius:10px;
+    background: var(--pink);
+    color:#1a0410;
+    font-weight:700;
+    font-size: 13px;
+    padding: 12px 20px;
+    cursor:pointer;
+    transition: background .15s;
+  }
+  .gen-row button:hover{ background: var(--pink-soft); }
+  .gen-output{
+    margin-top: 14px;
+    display:none;
+    align-items:center;
+    gap: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--pink-dim);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .gen-output.show{ display:flex; }
+  .gen-output code{
+    flex:1;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--pink-soft);
+    word-break: break-all;
+  }
+  .gen-output button{
+    flex-shrink:0;
+    border:none; border-radius:8px;
+    background: var(--pink);
+    color:#1a0410;
+    font-weight:700;
+    font-size: 12px;
+    padding: 9px 14px;
+    cursor:pointer;
+  }
+  .gen-output button.copied{ background: #4ade80; }
+
+  /* MODAL PREVIEW */
+  .modal-overlay{
+    position: fixed; inset:0;
+    background: rgba(6,5,7,0.85);
+    backdrop-filter: blur(6px);
+    z-index: 50;
+    display:none;
+    align-items:center; justify-content:center;
+    padding: 20px;
+  }
+  .modal-overlay.show{ display:flex; }
+  .modal-box{
+    width: 100%; max-width: 560px;
+    background: var(--surface);
+    border: 1px solid var(--pink-dim);
+    border-radius: 18px;
+    overflow:hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .modal-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .modal-head .titles .name{ font-weight:700; font-size:14.5px; }
+  .modal-head .titles .artist{ color:var(--muted); font-size:12px; margin-top:2px; }
+  .modal-close{
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    width:30px; height:30px; border-radius:50%;
+    cursor:pointer; font-size:14px;
+    flex-shrink:0;
+  }
+  .modal-close:hover{ border-color: var(--pink); color: var(--pink-soft); }
+  .modal-player{ aspect-ratio: 16/9; background:#000; }
+  .modal-player iframe{ width:100%; height:100%; border:0; }
+  .modal-actions{ padding: 14px 18px; display:flex; gap:10px; flex-wrap:wrap; }
+  .modal-actions a, .modal-actions button{
+    flex:1;
+    text-align:center;
+    text-decoration:none;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight:600;
+    cursor:pointer;
+    border:1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--text);
+  }
+  .modal-actions a:hover, .modal-actions button:hover{ border-color: var(--pink); color: var(--pink-soft); }
+
+  /* MOBILE */
+  @media (max-width: 640px){
+    header{ padding: 20px 5vw 16px; }
+    .logo{ font-size: 20px; }
+    .hero{ padding: 40px 5vw 30px; }
+    .tuner{ padding: 0 5vw; }
+    .tuner-track{
+      overflow-x: auto;
+      height: auto;
+      padding: 6px;
+      gap: 4px;
+    }
+    .tuner-track::before{ display:none; }
+    .cat-btn{
+      flex: 0 0 auto;
+      padding: 10px 16px;
+      border-radius: 10px;
+      white-space: nowrap;
+    }
+    .cat-btn.active{ background: var(--pink-dim); }
+    .needle{ display:none; }
+    main{ padding: 40px 5vw 70px; }
+    .section-head h2{ font-size: 20px; }
+    .gen-row select{ flex: 1 1 100%; }
+    .gen-row input{ flex: 1 1 100%; }
+    .gen-row button{ flex: 1 1 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="dot"></span>MTA MÚSICAS</div>
+  <div class="freq" id="freqDisplay">98.5 FM</div>
+</header>
+
+<section class="hero">
+  <h1>SINTONIZA<br>SUA RÁDIO</h1>
+  <p class="sub">Encontra o link da música certa pro seu setRadio. Busca direta ou escolhe uma categoria e pega o que tá bombando agora.</p>
+
+  <div class="search-wrap">
+    <input type="text" id="searchInput" placeholder="Buscar música ou artista...">
+    <button onclick="doSearch()">▶</button>
+  </div>
+</section>
+
+<div class="tuner">
+  <div class="tuner-track" id="tunerTrack">
+    <div class="needle" id="needle"></div>
+    <button class="cat-btn active" data-cat="funk"><span>FUNK</span><span class="khz">87.9</span></button>
+    <button class="cat-btn" data-cat="sertanejo"><span>SERTANEJO</span><span class="khz">92.3</span></button>
+    <button class="cat-btn" data-cat="rock"><span>ROCK</span><span class="khz">96.7</span></button>
+    <button class="cat-btn" data-cat="pagode"><span>PAGODE</span><span class="khz">101.1</span></button>
+    <button class="cat-btn" data-cat="internacional"><span>INTER</span><span class="khz">104.5</span></button>
+    <button class="cat-btn" data-cat="sertanejo2"><span>SÓ MAIS TOCADAS</span><span class="khz">108.0</span></button>
+  </div>
+</div>
+
+<main>
+  <div class="note">
+    <b>Nota:</b> as listas abaixo são exemplos de layout. Pra funcionar de verdade, cada faixa deve puxar de uma API de busca (ex: YouTube Data API) e o link do vídeo serve como referência — a conversão pra stream de áudio direto (pro setRadio) precisa de um serviço externo de extração, que fica fora dessa interface.
+  </div>
+
+  <div class="generator">
+    <h3>Gerador de comando</h3>
+    <p>Achou o vídeo certo no YouTube? Cola o link aqui, escolhe o comando do seu servidor e copia pra colar no F8.</p>
+    <div class="gen-row">
+      <select id="cmdSelect">
+        <option value="/setradio">/setradio</option>
+        <option value="/playradio">/playradio</option>
+        <option value="/addradio">/addradio</option>
+        <option value="/radio">/radio</option>
+        <option value="setradio">setradio (console)</option>
+      </select>
+      <input type="text" id="linkInput" placeholder="Cola o link do YouTube aqui...">
+      <button onclick="gerarComando()">Gerar</button>
+    </div>
+    <div class="gen-output" id="genOutput">
+      <code id="genCode"></code>
+      <button id="copyBtn" onclick="copiarComando()">Copiar</button>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <h2 id="catTitle">Funk — Mais Tocadas</h2>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span id="catCount">1–8 de 40</span>
+      <select id="quickCmdSelect" style="background:var(--surface-2); border:1px solid var(--line); border-radius:8px; color:var(--pink-soft); font-family:'JetBrains Mono', monospace; font-size:11.5px; padding:6px 8px;">
+        <option value="/setradio">/setradio</option>
+        <option value="/playradio">/playradio</option>
+        <option value="/addradio">/addradio</option>
+        <option value="/radio">/radio</option>
+        <option value="setradio">setradio</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid" id="trackGrid"></div>
+</main>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="titles">
+        <div class="name" id="modalName"></div>
+        <div class="artist" id="modalArtist"></div>
+      </div>
+      <button class="modal-close" onclick="fecharModal()">✕</button>
+    </div>
+    <div class="modal-player" id="modalPlayer"></div>
+    <div class="modal-actions">
+      <a id="modalYtLink" href="#" target="_blank" rel="noopener">Abrir no YouTube</a>
+      <button onclick="focarGerador()">Colar link e gerar comando</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  feito pra tocar alto no servidor. <b>MTA MÚSICAS</b> · não hospeda áudio, apenas referencia links públicos do YouTube.
+</footer>
+
+<script>
+const categories = {
+  funk: {
+    title: "Funk — Mais Tocadas",
+    tracks: [
+      ["Bum Bum Tam Tam (Refeito)", "MC Fioti"],
+      ["Automotivo Bololo Haha", "DJ Gustah"],
+      ["Cavalgada", "MC Kevin o Chris"],
+      ["Bipolar", "MC Ryan SP"],
+      ["Ela é do Tipo", "MC Don Juan"],
+      ["Envolvimento", "MC Rita"],
+      ["Fico Assim Sem Você (Remix)", "DJ Marcelinho"],
+      ["Rave de Favela", "MC Ryan SP & Kevin o Chris"]
+    ]
+  },
+  sertanejo: {
+    title: "Sertanejo — Mais Tocadas",
+    tracks: [
+      ["Evidências", "Chitãozinho & Xororó"],
+      ["Coração Cachorro", "Zé Neto & Cristiano"],
+      ["Erro Consciente", "Henrique & Juliano"],
+      ["Nosso Quadro", "Marília Mendonça"],
+      ["Batidão Diferente", "Gusttavo Lima"],
+      ["Medida Certa", "Jorge & Mateus"],
+      ["50 Reais", "Naiara Azevedo"],
+      ["Cabeça Fria, Coração Quente", "Maiara & Maraisa"]
+    ]
+  },
+  rock: {
+    title: "Rock — Mais Tocadas",
+    tracks: [
+      ["Tempo Perdido", "Legião Urbana"],
+      ["Como Uma Onda", "Lulu Santos"],
+      ["É o Amor", "Skank"],
+      ["Pais e Filhos", "Legião Urbana"],
+      ["Smells Like Teen Spirit", "Nirvana"],
+      ["Sweet Child O' Mine", "Guns N' Roses"],
+      ["Bohemian Rhapsody", "Queen"],
+      ["Mais Uma Vez", "Legião Urbana"]
+    ]
+  },
+  pagode: {
+    title: "Pagode — Mais Tocadas",
+    tracks: [
+      ["Deixa Alagar", "Turma do Pagode"],
+      ["Zero a Zero", "Sorriso Maroto"],
+      ["Fico Assim Sem Você", "Claudinho & Buchecha"],
+      ["Só Depois", "Grupo Revelação"],
+      ["Testemunha", "Thiaguinho"],
+      ["A Sombra da Maldade", "Molejo"],
+      ["Meu Bem Querer", "Djavan (versão pagode)"],
+      ["Camarote", "Menos é Mais"]
+    ]
+  },
+  internacional: {
+    title: "Internacional — Mais Tocadas",
+    tracks: [
+      ["Blinding Lights", "The Weeknd"],
+      ["As It Was", "Harry Styles"],
+      ["Flowers", "Miley Cyrus"],
+      ["Espresso", "Sabrina Carpenter"],
+      ["Die With A Smile", "Lady Gaga & Bruno Mars"],
+      ["Good 4 U", "Olivia Rodrigo"],
+      ["Levitating", "Dua Lipa"],
+      ["Save Your Tears", "The Weeknd"]
+    ]
+  },
+  sertanejo2: {
+    title: "Top Geral — Todas Categorias",
+    tracks: [
+      ["Evidências", "Chitãozinho & Xororó"],
+      ["Bum Bum Tam Tam (Refeito)", "MC Fioti"],
+      ["Blinding Lights", "The Weeknd"],
+      ["Zero a Zero", "Sorriso Maroto"],
+      ["Tempo Perdido", "Legião Urbana"],
+      ["Nosso Quadro", "Marília Mendonça"],
+      ["Cavalgada", "MC Kevin o Chris"],
+      ["Flowers", "Miley Cyrus"]
+    ]
+  }
+};
+
+const grid = document.getElementById('trackGrid');
+const catTitle = document.getElementById('catTitle');
+const catCount = document.getElementById('catCount');
+const needle = document.getElementById('needle');
+const freqDisplay = document.getElementById('freqDisplay');
+const buttons = document.querySelectorAll('.cat-btn');
+const freqs = { funk:"87.9", sertanejo:"92.3", rock:"96.7", pagode:"101.1", internacional:"104.5", sertanejo2:"108.0" };
+
+function renderCategory(key){
+  const data = categories[key];
+  catTitle.textContent = data.title;
+  catCount.textContent = `1–${data.tracks.length} de ${data.tracks.length}`;
+  freqDisplay.textContent = freqs[key] + " FM";
+  grid.innerHTML = data.tracks.map((t, i) => `
+    <div class="track">
+      <div class="rank">${String(i+1).padStart(2,'0')}</div>
+      <div class="track-info" onclick="abrirModal('${escapeAttr(t[0])}','${escapeAttr(t[1])}')">
+        <div class="name">${t[0]}</div>
+        <div class="artist">${t[1]}</div>
+      </div>
+      <button class="icon-btn copy-ic" title="Copiar comando pra colar no F8" onclick="copiarLinkFaixa(this, '${escapeAttr(t[0])}','${escapeAttr(t[1])}')">⧉</button>
+      <button class="icon-btn play-ic" title="Prévia" onclick="abrirModal('${escapeAttr(t[0])}','${escapeAttr(t[1])}')">▶</button>
+    </div>
+  `).join('');
+}
+
+function escapeAttr(s){ return s.replace(/'/g, "\\'"); }
+
+function copiarLinkFaixa(btn, nome, artista){
+  const query = `${nome} ${artista}`;
+  const cmd = document.getElementById('quickCmdSelect').value;
+  const link = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+  const texto = `${cmd} ${link}`;
+  navigator.clipboard.writeText(texto).then(() => {
+    btn.classList.add('copied');
+    btn.textContent = '✓';
+    setTimeout(() => { btn.classList.remove('copied'); btn.textContent = '⧉'; }, 1500);
+  });
+}
+
+// ---- MODAL DE PREVIEW ----
+const modalOverlay = document.getElementById('modalOverlay');
+const modalPlayer = document.getElementById('modalPlayer');
+const modalName = document.getElementById('modalName');
+const modalArtist = document.getElementById('modalArtist');
+const modalYtLink = document.getElementById('modalYtLink');
+
+function abrirModal(nome, artista){
+  const query = `${nome} ${artista}`;
+  modalName.textContent = nome;
+  modalArtist.textContent = artista;
+  modalYtLink.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+  // embed no modo "busca" do YouTube: toca o resultado mais relevante, sem precisar de API/video ID
+  modalPlayer.innerHTML = `<iframe src="https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(query)}&autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+  modalOverlay.classList.add('show');
+}
+
+function fecharModal(){
+  modalOverlay.classList.remove('show');
+  modalPlayer.innerHTML = ''; // para o áudio ao fechar
+}
+
+modalOverlay.addEventListener('click', (e) => {
+  if(e.target === modalOverlay) fecharModal();
+});
+
+function focarGerador(){
+  fecharModal();
+  document.getElementById('linkInput').focus();
+  document.querySelector('.generator').scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+// ---- GERADOR DE COMANDO ----
+function gerarComando(){
+  const link = document.getElementById('linkInput').value.trim();
+  const cmd = document.getElementById('cmdSelect').value;
+  const out = document.getElementById('genOutput');
+  const code = document.getElementById('genCode');
+  if(!link){ document.getElementById('linkInput').focus(); return; }
+  code.textContent = `${cmd} ${link}`;
+  out.classList.add('show');
+}
+
+function copiarComando(){
+  const code = document.getElementById('genCode').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = 'Copiado!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 1600);
+  });
+}
+
+function setActive(btn){
+  buttons.forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const track = document.getElementById('tunerTrack');
+  const idx = Array.from(buttons).indexOf(btn);
+  needle.style.left = (idx * (100/6)) + '%';
+}
+
+buttons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    setActive(btn);
+    renderCategory(btn.dataset.cat);
+  });
+});
+
+function doSearch(){
+  const q = document.getElementById('searchInput').value.trim();
+  if(q.length === 0) return;
+  window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, '_blank');
+}
+document.getElementById('searchInput').addEventListener('keydown', e => {
+  if(e.key === 'Enter') doSearch();
+});
+
+// init
+needle.style.left = '0%';
+renderCategory('funk');
+</script>
+
+</body>
+</html>
