@@ -25,6 +25,7 @@
     font-family: 'Inter', sans-serif;
     min-height:100vh;
     overflow-x:hidden;
+    padding-bottom: 90px; /* espaço pra barra de player fixa */
   }
   body::before{
     content:"";
@@ -64,6 +65,19 @@
     font-size:13px;
     letter-spacing: 2px;
   }
+
+  .api-banner{
+    position:relative; z-index:1;
+    margin: 16px 6vw 0;
+    background: linear-gradient(90deg, rgba(255,45,138,0.12), rgba(255,45,138,0.03));
+    border: 1px solid var(--pink-dim);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 12.5px;
+    color: var(--pink-soft);
+    display:none;
+  }
+  .api-banner.show{ display:block; }
 
   /* HERO / TUNER */
   .hero{
@@ -123,7 +137,7 @@
   }
   .search-wrap button:hover{ transform: scale(1.05); background: var(--pink-soft); }
 
-  /* TUNER DIAL - signature element */
+  /* TUNER DIAL */
   .tuner{
     position:relative; z-index:1;
     max-width: 900px;
@@ -177,28 +191,41 @@
   }
 
   /* SECTION */
-  main{ position:relative; z-index:1; padding: 56px 6vw 100px; max-width: 1180px; margin:0 auto; }
+  main{ position:relative; z-index:1; padding: 56px 6vw 60px; max-width: 1180px; margin:0 auto; }
   .section-head{
     display:flex; align-items:baseline; justify-content:space-between;
     margin-bottom: 22px;
     border-bottom:1px solid var(--line);
     padding-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 10px;
   }
   .section-head h2{
     font-family:'Anton', sans-serif;
     font-size: 28px;
     letter-spacing:.5px;
   }
-  .section-head span{
+  .head-right{ display:flex; align-items:center; gap:10px; }
+  .head-right span{
     font-family:'JetBrains Mono', monospace;
     font-size: 12px;
     color: var(--pink-soft);
   }
+  .head-right select{
+    background:var(--surface-2); border:1px solid var(--line); border-radius:8px;
+    color:var(--pink-soft); font-family:'JetBrains Mono', monospace; font-size:11.5px; padding:6px 8px;
+  }
+  .back-btn{
+    background:var(--surface-2); border:1px solid var(--pink-dim); border-radius:8px;
+    color:var(--pink-soft); font-size:12px; padding:6px 12px; cursor:pointer; display:none;
+  }
+  .back-btn.show{ display:inline-block; }
 
   .grid{
     display:grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
+    min-height: 80px;
   }
   @media (max-width: 720px){ .grid{ grid-template-columns: 1fr; } }
 
@@ -207,29 +234,29 @@
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 12px;
-    padding: 12px 16px;
-    text-decoration:none;
+    padding: 10px 14px;
     color: var(--text);
-    transition: border-color .2s, background .2s, transform .15s;
+    transition: border-color .2s, background .2s;
   }
-  .track:hover{
-    border-color: var(--pink-dim);
+  .track:hover{ border-color: var(--pink-dim); background: var(--surface-2); }
+  .track.playing{ border-color: var(--pink); background: var(--surface-2); }
+  .thumb{
+    width:46px; height:46px; border-radius:8px; object-fit:cover; flex-shrink:0;
     background: var(--surface-2);
   }
   .rank{
     font-family:'Anton', sans-serif;
-    font-size: 22px;
+    font-size: 20px;
     color: var(--pink-dim);
-    width: 32px;
+    width: 26px;
     text-align:center;
     flex-shrink:0;
   }
-  .track:hover .rank{ color: var(--pink); }
   .track-info{ flex:1; min-width:0; cursor:pointer; }
-  .track-info .name{ font-weight:600; font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .track-info .artist{ color: var(--muted); font-size:12.5px; margin-top:2px; }
+  .track-info .name{ font-weight:600; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .track-info .artist{ color: var(--muted); font-size:12px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .icon-btn{
-    width:34px; height:34px; border-radius:50%;
+    width:32px; height:32px; border-radius:50%;
     border: none;
     display:flex; align-items:center; justify-content:center;
     flex-shrink:0;
@@ -243,30 +270,12 @@
   .copy-ic:hover{ border-color: var(--pink); background: var(--pink-dim); color:#fff; }
   .copy-ic.copied{ background:#4ade80; color:#052e16; border-color:#4ade80; }
   .copy-ic:active{ transform: scale(0.92); }
-
-  footer{
-    position:relative; z-index:1;
-    text-align:center;
-    padding: 30px 6vw 40px;
-    color: var(--muted);
-    font-size: 12px;
-    border-top:1px solid var(--line);
+  .loading-msg, .empty-msg{
+    grid-column: 1 / -1;
+    text-align:center; color: var(--muted); font-size:13px; padding: 30px 0;
   }
-  footer b{ color: var(--pink-soft); }
 
-  .note{
-    max-width: 900px; margin: 0 auto 30px;
-    background: var(--surface);
-    border:1px dashed var(--pink-dim);
-    border-radius: 12px;
-    padding: 14px 18px;
-    font-size: 12.5px;
-    color: var(--muted);
-    line-height:1.6;
-  }
-  .note b{ color: var(--pink-soft); }
-
-  /* GERADOR DE COMANDO */
+  /* GERADOR */
   .generator{
     max-width: 900px; margin: 0 auto 40px;
     background: var(--surface);
@@ -274,148 +283,77 @@
     border-radius: 16px;
     padding: 22px 24px;
   }
-  .generator h3{
-    font-family:'Anton', sans-serif;
-    font-size: 18px;
-    letter-spacing:.5px;
-    margin-bottom: 4px;
-  }
+  .generator h3{ font-family:'Anton', sans-serif; font-size: 18px; letter-spacing:.5px; margin-bottom: 4px; }
   .generator p{ color: var(--muted); font-size: 12.5px; margin-bottom: 16px; }
   .gen-row{ display:flex; gap:10px; flex-wrap:wrap; }
   .gen-row select, .gen-row input{
-    background: var(--surface-2);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    color: var(--text);
-    padding: 12px 14px;
-    font-size: 13.5px;
-    font-family:'JetBrains Mono', monospace;
-    outline:none;
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px;
+    color: var(--text); padding: 12px 14px; font-size: 13.5px;
+    font-family:'JetBrains Mono', monospace; outline:none;
   }
   .gen-row select{ flex: 0 0 150px; }
   .gen-row input{ flex: 1; min-width: 200px; }
   .gen-row input:focus, .gen-row select:focus{ border-color: var(--pink); }
   .gen-row button{
-    flex: 0 0 auto;
-    border:none; border-radius:10px;
-    background: var(--pink);
-    color:#1a0410;
-    font-weight:700;
-    font-size: 13px;
-    padding: 12px 20px;
-    cursor:pointer;
+    flex: 0 0 auto; border:none; border-radius:10px; background: var(--pink);
+    color:#1a0410; font-weight:700; font-size: 13px; padding: 12px 20px; cursor:pointer;
     transition: background .15s;
   }
   .gen-row button:hover{ background: var(--pink-soft); }
   .gen-output{
-    margin-top: 14px;
-    display:none;
-    align-items:center;
-    gap: 10px;
-    background: var(--surface-2);
-    border: 1px solid var(--pink-dim);
-    border-radius: 10px;
-    padding: 12px 14px;
+    margin-top: 14px; display:none; align-items:center; gap: 10px;
+    background: var(--surface-2); border: 1px solid var(--pink-dim); border-radius: 10px; padding: 12px 14px;
   }
   .gen-output.show{ display:flex; }
-  .gen-output code{
-    flex:1;
-    font-family:'JetBrains Mono', monospace;
-    font-size: 13px;
-    color: var(--pink-soft);
-    word-break: break-all;
-  }
-  .gen-output button{
-    flex-shrink:0;
-    border:none; border-radius:8px;
-    background: var(--pink);
-    color:#1a0410;
-    font-weight:700;
-    font-size: 12px;
-    padding: 9px 14px;
-    cursor:pointer;
-  }
+  .gen-output code{ flex:1; font-family:'JetBrains Mono', monospace; font-size: 13px; color: var(--pink-soft); word-break: break-all; }
+  .gen-output button{ flex-shrink:0; border:none; border-radius:8px; background: var(--pink); color:#1a0410; font-weight:700; font-size: 12px; padding: 9px 14px; cursor:pointer; }
   .gen-output button.copied{ background: #4ade80; }
 
-  /* MODAL PREVIEW */
-  .modal-overlay{
-    position: fixed; inset:0;
-    background: rgba(6,5,7,0.85);
-    backdrop-filter: blur(6px);
-    z-index: 50;
-    display:none;
-    align-items:center; justify-content:center;
-    padding: 20px;
+  footer{
+    position:relative; z-index:1; text-align:center; padding: 30px 6vw 40px;
+    color: var(--muted); font-size: 12px; border-top:1px solid var(--line);
   }
-  .modal-overlay.show{ display:flex; }
-  .modal-box{
-    width: 100%; max-width: 560px;
-    background: var(--surface);
-    border: 1px solid var(--pink-dim);
-    border-radius: 18px;
-    overflow:hidden;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-  }
-  .modal-head{
-    display:flex; align-items:center; justify-content:space-between;
-    padding: 16px 18px;
-    border-bottom: 1px solid var(--line);
-  }
-  .modal-head .titles .name{ font-weight:700; font-size:14.5px; }
-  .modal-head .titles .artist{ color:var(--muted); font-size:12px; margin-top:2px; }
-  .modal-close{
-    background: var(--surface-2);
-    border: 1px solid var(--line);
-    color: var(--text);
-    width:30px; height:30px; border-radius:50%;
-    cursor:pointer; font-size:14px;
-    flex-shrink:0;
-  }
-  .modal-close:hover{ border-color: var(--pink); color: var(--pink-soft); }
-  .modal-player{ aspect-ratio: 16/9; background:#000; }
-  .modal-player iframe{ width:100%; height:100%; border:0; }
-  .modal-actions{ padding: 14px 18px; display:flex; gap:10px; flex-wrap:wrap; }
-  .modal-actions a, .modal-actions button{
-    flex:1;
-    text-align:center;
-    text-decoration:none;
-    padding: 12px;
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight:600;
-    cursor:pointer;
-    border:1px solid var(--line);
-    background: var(--surface-2);
-    color: var(--text);
-  }
-  .modal-actions a:hover, .modal-actions button:hover{ border-color: var(--pink); color: var(--pink-soft); }
+  footer b{ color: var(--pink-soft); }
 
-  /* MOBILE */
+  /* BARRA DE PLAYER (só áudio) */
+  .player-bar{
+    position:fixed; left:0; right:0; bottom:0; z-index: 60;
+    background: var(--surface);
+    border-top: 1px solid var(--pink-dim);
+    padding: 12px 20px;
+    display:none;
+    align-items:center; gap:14px;
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.4);
+  }
+  .player-bar.show{ display:flex; }
+  .pb-toggle{
+    width:40px; height:40px; border-radius:50%; border:none; background: var(--pink);
+    color:#1a0410; font-size:14px; cursor:pointer; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .pb-info{ flex:1; min-width:0; }
+  .pb-info .name{ font-weight:700; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pb-info .artist{ color:var(--muted); font-size:11.5px; }
+  .pb-close{
+    background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer; flex-shrink:0;
+  }
+  .pb-close:hover{ color: var(--pink-soft); }
+  #ytHiddenHolder{ position:absolute; width:1px; height:1px; overflow:hidden; opacity:0; pointer-events:none; }
+
   @media (max-width: 640px){
     header{ padding: 20px 5vw 16px; }
     .logo{ font-size: 20px; }
     .hero{ padding: 40px 5vw 30px; }
     .tuner{ padding: 0 5vw; }
-    .tuner-track{
-      overflow-x: auto;
-      height: auto;
-      padding: 6px;
-      gap: 4px;
-    }
+    .tuner-track{ overflow-x: auto; height: auto; padding: 6px; gap: 4px; }
     .tuner-track::before{ display:none; }
-    .cat-btn{
-      flex: 0 0 auto;
-      padding: 10px 16px;
-      border-radius: 10px;
-      white-space: nowrap;
-    }
+    .cat-btn{ flex: 0 0 auto; padding: 10px 16px; border-radius: 10px; white-space: nowrap; }
     .cat-btn.active{ background: var(--pink-dim); }
     .needle{ display:none; }
-    main{ padding: 40px 5vw 70px; }
+    main{ padding: 40px 5vw 40px; }
     .section-head h2{ font-size: 20px; }
-    .gen-row select{ flex: 1 1 100%; }
-    .gen-row input{ flex: 1 1 100%; }
-    .gen-row button{ flex: 1 1 100%; }
+    .gen-row select, .gen-row input, .gen-row button{ flex: 1 1 100%; }
+    .player-bar{ padding: 10px 14px; }
   }
 </style>
 </head>
@@ -425,6 +363,10 @@
   <div class="logo"><span class="dot"></span>MTA MÚSICAS</div>
   <div class="freq" id="freqDisplay">98.5 FM</div>
 </header>
+
+<div class="api-banner" id="apiBanner">
+  ⚠ Chave da API não configurada — buscas e "mais tocadas" reais estão desativadas. Edite <code>CONFIG.API_KEY</code> no código.
+</div>
 
 <section class="hero">
   <h1>SINTONIZA<br>SUA RÁDIO</h1>
@@ -444,18 +386,14 @@
     <button class="cat-btn" data-cat="rock"><span>ROCK</span><span class="khz">96.7</span></button>
     <button class="cat-btn" data-cat="pagode"><span>PAGODE</span><span class="khz">101.1</span></button>
     <button class="cat-btn" data-cat="internacional"><span>INTER</span><span class="khz">104.5</span></button>
-    <button class="cat-btn" data-cat="sertanejo2"><span>SÓ MAIS TOCADAS</span><span class="khz">108.0</span></button>
+    <button class="cat-btn" data-cat="top"><span>TOP GERAL</span><span class="khz">108.0</span></button>
   </div>
 </div>
 
 <main>
-  <div class="note">
-    <b>Nota:</b> as listas abaixo são exemplos de layout. Pra funcionar de verdade, cada faixa deve puxar de uma API de busca (ex: YouTube Data API) e o link do vídeo serve como referência — a conversão pra stream de áudio direto (pro setRadio) precisa de um serviço externo de extração, que fica fora dessa interface.
-  </div>
-
   <div class="generator">
     <h3>Gerador de comando</h3>
-    <p>Achou o vídeo certo no YouTube? Cola o link aqui, escolhe o comando do seu servidor e copia pra colar no F8.</p>
+    <p>Já tem um link do YouTube (ou copiou um daqui de baixo)? Escolhe o comando do seu servidor e gera pra colar no F8.</p>
     <div class="gen-row">
       <select id="cmdSelect">
         <option value="/setradio">/setradio</option>
@@ -475,9 +413,10 @@
 
   <div class="section-head">
     <h2 id="catTitle">Funk — Mais Tocadas</h2>
-    <div style="display:flex; align-items:center; gap:10px;">
-      <span id="catCount">1–8 de 40</span>
-      <select id="quickCmdSelect" style="background:var(--surface-2); border:1px solid var(--line); border-radius:8px; color:var(--pink-soft); font-family:'JetBrains Mono', monospace; font-size:11.5px; padding:6px 8px;">
+    <div class="head-right">
+      <button class="back-btn" id="backBtn" onclick="voltarCategoria()">← voltar</button>
+      <span id="catCount"></span>
+      <select id="quickCmdSelect">
         <option value="/setradio">/setradio</option>
         <option value="/playradio">/playradio</option>
         <option value="/addradio">/addradio</option>
@@ -490,108 +429,44 @@
   <div class="grid" id="trackGrid"></div>
 </main>
 
-<div class="modal-overlay" id="modalOverlay">
-  <div class="modal-box">
-    <div class="modal-head">
-      <div class="titles">
-        <div class="name" id="modalName"></div>
-        <div class="artist" id="modalArtist"></div>
-      </div>
-      <button class="modal-close" onclick="fecharModal()">✕</button>
-    </div>
-    <div class="modal-player" id="modalPlayer"></div>
-    <div class="modal-actions">
-      <a id="modalYtLink" href="#" target="_blank" rel="noopener">Abrir no YouTube</a>
-      <button onclick="focarGerador()">Colar link e gerar comando</button>
-    </div>
-  </div>
-</div>
-
 <footer>
-  feito pra tocar alto no servidor. <b>MTA MÚSICAS</b> · não hospeda áudio, apenas referencia links públicos do YouTube.
+  feito pra tocar alto no servidor. <b>MTA MÚSICAS</b> · busca via YouTube Data API · não hospeda áudio, apenas referencia vídeos públicos do YouTube.
 </footer>
 
+<div class="player-bar" id="playerBar">
+  <button class="pb-toggle" id="pbToggle" onclick="togglePlay()">▶</button>
+  <div class="pb-info">
+    <div class="name" id="pbName">—</div>
+    <div class="artist" id="pbArtist">—</div>
+  </div>
+  <button class="pb-close" onclick="fecharPlayer()">✕</button>
+</div>
+<div id="ytHiddenHolder"><div id="ytHiddenPlayer"></div></div>
+
 <script>
-const categories = {
-  funk: {
-    title: "Funk — Mais Tocadas",
-    tracks: [
-      ["Bum Bum Tam Tam (Refeito)", "MC Fioti"],
-      ["Automotivo Bololo Haha", "DJ Gustah"],
-      ["Cavalgada", "MC Kevin o Chris"],
-      ["Bipolar", "MC Ryan SP"],
-      ["Ela é do Tipo", "MC Don Juan"],
-      ["Envolvimento", "MC Rita"],
-      ["Fico Assim Sem Você (Remix)", "DJ Marcelinho"],
-      ["Rave de Favela", "MC Ryan SP & Kevin o Chris"]
-    ]
-  },
-  sertanejo: {
-    title: "Sertanejo — Mais Tocadas",
-    tracks: [
-      ["Evidências", "Chitãozinho & Xororó"],
-      ["Coração Cachorro", "Zé Neto & Cristiano"],
-      ["Erro Consciente", "Henrique & Juliano"],
-      ["Nosso Quadro", "Marília Mendonça"],
-      ["Batidão Diferente", "Gusttavo Lima"],
-      ["Medida Certa", "Jorge & Mateus"],
-      ["50 Reais", "Naiara Azevedo"],
-      ["Cabeça Fria, Coração Quente", "Maiara & Maraisa"]
-    ]
-  },
-  rock: {
-    title: "Rock — Mais Tocadas",
-    tracks: [
-      ["Tempo Perdido", "Legião Urbana"],
-      ["Como Uma Onda", "Lulu Santos"],
-      ["É o Amor", "Skank"],
-      ["Pais e Filhos", "Legião Urbana"],
-      ["Smells Like Teen Spirit", "Nirvana"],
-      ["Sweet Child O' Mine", "Guns N' Roses"],
-      ["Bohemian Rhapsody", "Queen"],
-      ["Mais Uma Vez", "Legião Urbana"]
-    ]
-  },
-  pagode: {
-    title: "Pagode — Mais Tocadas",
-    tracks: [
-      ["Deixa Alagar", "Turma do Pagode"],
-      ["Zero a Zero", "Sorriso Maroto"],
-      ["Fico Assim Sem Você", "Claudinho & Buchecha"],
-      ["Só Depois", "Grupo Revelação"],
-      ["Testemunha", "Thiaguinho"],
-      ["A Sombra da Maldade", "Molejo"],
-      ["Meu Bem Querer", "Djavan (versão pagode)"],
-      ["Camarote", "Menos é Mais"]
-    ]
-  },
-  internacional: {
-    title: "Internacional — Mais Tocadas",
-    tracks: [
-      ["Blinding Lights", "The Weeknd"],
-      ["As It Was", "Harry Styles"],
-      ["Flowers", "Miley Cyrus"],
-      ["Espresso", "Sabrina Carpenter"],
-      ["Die With A Smile", "Lady Gaga & Bruno Mars"],
-      ["Good 4 U", "Olivia Rodrigo"],
-      ["Levitating", "Dua Lipa"],
-      ["Save Your Tears", "The Weeknd"]
-    ]
-  },
-  sertanejo2: {
-    title: "Top Geral — Todas Categorias",
-    tracks: [
-      ["Evidências", "Chitãozinho & Xororó"],
-      ["Bum Bum Tam Tam (Refeito)", "MC Fioti"],
-      ["Blinding Lights", "The Weeknd"],
-      ["Zero a Zero", "Sorriso Maroto"],
-      ["Tempo Perdido", "Legião Urbana"],
-      ["Nosso Quadro", "Marília Mendonça"],
-      ["Cavalgada", "MC Kevin o Chris"],
-      ["Flowers", "Miley Cyrus"]
-    ]
-  }
+/* ======================= CONFIG ======================= */
+const CONFIG = {
+  API_KEY: "AIzaSyBRD-2w9a_8V213II9pU0ZvQwBv089aGc8" // <- sua chave da YouTube Data API v3
 };
+/* ========================================================= */
+
+const categoryQueries = {
+  funk:          "funk 2026 mais tocadas",
+  sertanejo:     "sertanejo 2026 mais tocadas",
+  rock:          "rock nacional e internacional mais tocadas",
+  pagode:        "pagode 2026 mais tocadas",
+  internacional: "top hits internacional 2026",
+  top:           "top músicas mais tocadas 2026"
+};
+const categoryTitles = {
+  funk: "Funk — Mais Tocadas",
+  sertanejo: "Sertanejo — Mais Tocadas",
+  rock: "Rock — Mais Tocadas",
+  pagode: "Pagode — Mais Tocadas",
+  internacional: "Internacional — Mais Tocadas",
+  top: "Top Geral — Mais Tocadas"
+};
+const freqs = { funk:"87.9", sertanejo:"92.3", rock:"96.7", pagode:"101.1", internacional:"104.5", top:"108.0" };
 
 const grid = document.getElementById('trackGrid');
 const catTitle = document.getElementById('catTitle');
@@ -599,73 +474,115 @@ const catCount = document.getElementById('catCount');
 const needle = document.getElementById('needle');
 const freqDisplay = document.getElementById('freqDisplay');
 const buttons = document.querySelectorAll('.cat-btn');
-const freqs = { funk:"87.9", sertanejo:"92.3", rock:"96.7", pagode:"101.1", internacional:"104.5", sertanejo2:"108.0" };
+const backBtn = document.getElementById('backBtn');
+let currentCat = 'funk';
+let cache = {}; // cache simples pra não repetir buscas e economizar cota
 
-function renderCategory(key){
-  const data = categories[key];
-  catTitle.textContent = data.title;
-  catCount.textContent = `1–${data.tracks.length} de ${data.tracks.length}`;
-  freqDisplay.textContent = freqs[key] + " FM";
-  grid.innerHTML = data.tracks.map((t, i) => `
-    <div class="track">
-      <div class="rank">${String(i+1).padStart(2,'0')}</div>
-      <div class="track-info" onclick="abrirModal('${escapeAttr(t[0])}','${escapeAttr(t[1])}')">
-        <div class="name">${t[0]}</div>
-        <div class="artist">${t[1]}</div>
+if(!CONFIG.API_KEY){
+  document.getElementById('apiBanner').classList.add('show');
+}
+
+async function ytSearch(query, maxResults = 8){
+  if(cache[query]) return cache[query];
+  if(!CONFIG.API_KEY) return null;
+  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=${maxResults}&q=${encodeURIComponent(query)}&key=${CONFIG.API_KEY}`;
+  try{
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('Falha na busca (' + res.status + ')');
+    const data = await res.json();
+    const items = (data.items || []).map(it => ({
+      videoId: it.id.videoId,
+      title: it.snippet.title.replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'"),
+      channel: it.snippet.channelTitle,
+      thumb: it.snippet.thumbnails?.default?.url || ''
+    }));
+    cache[query] = items;
+    return items;
+  }catch(err){
+    console.error(err);
+    return null;
+  }
+}
+
+function renderLoading(){
+  grid.innerHTML = `<div class="loading-msg">carregando...</div>`;
+}
+function renderEmpty(msg){
+  grid.innerHTML = `<div class="empty-msg">${msg}</div>`;
+}
+
+function renderTracks(items){
+  if(!items || items.length === 0){ renderEmpty('nada encontrado.'); return; }
+  grid.innerHTML = items.map((t, i) => `
+    <div class="track" id="track-${t.videoId}">
+      <img class="thumb" src="${t.thumb}" alt="">
+      <div class="track-info" onclick="tocarFaixa('${t.videoId}', '${escapeAttr(t.title)}', '${escapeAttr(t.channel)}')">
+        <div class="name">${t.title}</div>
+        <div class="artist">${t.channel}</div>
       </div>
-      <button class="icon-btn copy-ic" title="Copiar comando pra colar no F8" onclick="copiarLinkFaixa(this, '${escapeAttr(t[0])}','${escapeAttr(t[1])}')">⧉</button>
-      <button class="icon-btn play-ic" title="Prévia" onclick="abrirModal('${escapeAttr(t[0])}','${escapeAttr(t[1])}')">▶</button>
+      <button class="icon-btn copy-ic" title="Copiar comando pra colar no F8" onclick="copiarLinkFaixa(this, '${t.videoId}')">⧉</button>
+      <button class="icon-btn play-ic" title="Tocar" onclick="tocarFaixa('${t.videoId}', '${escapeAttr(t.title)}', '${escapeAttr(t.channel)}')">▶</button>
     </div>
   `).join('');
 }
 
-function escapeAttr(s){ return s.replace(/'/g, "\\'"); }
+async function carregarCategoria(key){
+  currentCat = key;
+  catTitle.textContent = categoryTitles[key];
+  freqDisplay.textContent = freqs[key] + ' FM';
+  backBtn.classList.remove('show');
+  if(!CONFIG.API_KEY){
+    renderEmpty('adicione sua API key no código pra carregar as mais tocadas de verdade.');
+    catCount.textContent = '';
+    return;
+  }
+  renderLoading();
+  const items = await ytSearch(categoryQueries[key], 8);
+  if(items === null){ renderEmpty('erro ao buscar — confira sua API key e a cota.'); return; }
+  catCount.textContent = `${items.length} resultados`;
+  renderTracks(items);
+}
 
-function copiarLinkFaixa(btn, nome, artista){
-  const query = `${nome} ${artista}`;
-  const cmd = document.getElementById('quickCmdSelect').value;
-  const link = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-  const texto = `${cmd} ${link}`;
-  navigator.clipboard.writeText(texto).then(() => {
-    btn.classList.add('copied');
-    btn.textContent = '✓';
-    setTimeout(() => { btn.classList.remove('copied'); btn.textContent = '⧉'; }, 1500);
+function escapeAttr(s){ return (s || '').replace(/'/g, "\\'"); }
+
+function setActive(btn){
+  buttons.forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const idx = Array.from(buttons).indexOf(btn);
+  needle.style.left = (idx * (100/6)) + '%';
+}
+
+buttons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    setActive(btn);
+    carregarCategoria(btn.dataset.cat);
   });
-}
-
-// ---- MODAL DE PREVIEW ----
-const modalOverlay = document.getElementById('modalOverlay');
-const modalPlayer = document.getElementById('modalPlayer');
-const modalName = document.getElementById('modalName');
-const modalArtist = document.getElementById('modalArtist');
-const modalYtLink = document.getElementById('modalYtLink');
-
-function abrirModal(nome, artista){
-  const query = `${nome} ${artista}`;
-  modalName.textContent = nome;
-  modalArtist.textContent = artista;
-  modalYtLink.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-  // embed no modo "busca" do YouTube: toca o resultado mais relevante, sem precisar de API/video ID
-  modalPlayer.innerHTML = `<iframe src="https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(query)}&autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
-  modalOverlay.classList.add('show');
-}
-
-function fecharModal(){
-  modalOverlay.classList.remove('show');
-  modalPlayer.innerHTML = ''; // para o áudio ao fechar
-}
-
-modalOverlay.addEventListener('click', (e) => {
-  if(e.target === modalOverlay) fecharModal();
 });
 
-function focarGerador(){
-  fecharModal();
-  document.getElementById('linkInput').focus();
-  document.querySelector('.generator').scrollIntoView({ behavior:'smooth', block:'center' });
+async function doSearch(){
+  const q = document.getElementById('searchInput').value.trim();
+  if(q.length === 0) return;
+  if(!CONFIG.API_KEY){
+    document.getElementById('apiBanner').classList.add('show');
+    return;
+  }
+  catTitle.textContent = `Resultados: "${q}"`;
+  backBtn.classList.add('show');
+  renderLoading();
+  const items = await ytSearch(q, 10);
+  if(items === null){ renderEmpty('erro ao buscar — confira sua API key e a cota.'); return; }
+  catCount.textContent = `${items.length} resultados`;
+  renderTracks(items);
+}
+document.getElementById('searchInput').addEventListener('keydown', e => { if(e.key === 'Enter') doSearch(); });
+
+function voltarCategoria(){
+  const activeBtn = document.querySelector('.cat-btn.active');
+  carregarCategoria(activeBtn ? activeBtn.dataset.cat : currentCat);
+  backBtn.classList.remove('show');
 }
 
-// ---- GERADOR DE COMANDO ----
+/* ---- GERADOR DE COMANDO ---- */
 function gerarComando(){
   const link = document.getElementById('linkInput').value.trim();
   const cmd = document.getElementById('cmdSelect').value;
@@ -675,44 +592,74 @@ function gerarComando(){
   code.textContent = `${cmd} ${link}`;
   out.classList.add('show');
 }
-
 function copiarComando(){
   const code = document.getElementById('genCode').textContent;
   navigator.clipboard.writeText(code).then(() => {
     const btn = document.getElementById('copyBtn');
-    btn.textContent = 'Copiado!';
-    btn.classList.add('copied');
+    btn.textContent = 'Copiado!'; btn.classList.add('copied');
     setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 1600);
   });
 }
-
-function setActive(btn){
-  buttons.forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const track = document.getElementById('tunerTrack');
-  const idx = Array.from(buttons).indexOf(btn);
-  needle.style.left = (idx * (100/6)) + '%';
-}
-
-buttons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    setActive(btn);
-    renderCategory(btn.dataset.cat);
+function copiarLinkFaixa(btn, videoId){
+  const cmd = document.getElementById('quickCmdSelect').value;
+  const link = `https://www.youtube.com/watch?v=${videoId}`;
+  navigator.clipboard.writeText(`${cmd} ${link}`).then(() => {
+    btn.classList.add('copied'); btn.textContent = '✓';
+    setTimeout(() => { btn.classList.remove('copied'); btn.textContent = '⧉'; }, 1500);
   });
-});
-
-function doSearch(){
-  const q = document.getElementById('searchInput').value.trim();
-  if(q.length === 0) return;
-  window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, '_blank');
 }
-document.getElementById('searchInput').addEventListener('keydown', e => {
-  if(e.key === 'Enter') doSearch();
-});
+
+/* ---- PLAYER "SÓ ÁUDIO" (usa o player oficial do YouTube, só escondido visualmente) ---- */
+let ytPlayer = null;
+let ytReady = false;
+let currentVideoId = null;
+let isPlaying = false;
+
+const tag = document.createElement('script');
+tag.src = "https://www.youtube.com/iframe_api";
+document.body.appendChild(tag);
+
+function onYouTubeIframeAPIReady(){
+  ytPlayer = new YT.Player('ytHiddenPlayer', {
+    height: '1', width: '1',
+    playerVars: { autoplay: 0, controls: 0 },
+    events: {
+      onReady: () => { ytReady = true; },
+      onStateChange: onPlayerStateChange
+    }
+  });
+}
+function onPlayerStateChange(e){
+  if(e.data === YT.PlayerState.PLAYING){ isPlaying = true; document.getElementById('pbToggle').textContent = '❚❚'; }
+  if(e.data === YT.PlayerState.PAUSED){ isPlaying = false; document.getElementById('pbToggle').textContent = '▶'; }
+  if(e.data === YT.PlayerState.ENDED){ isPlaying = false; document.getElementById('pbToggle').textContent = '▶'; }
+}
+
+function tocarFaixa(videoId, nome, artista){
+  if(!ytReady){ alert('Player carregando ainda, tenta de novo em 1 segundo.'); return; }
+  document.querySelectorAll('.track').forEach(t => t.classList.remove('playing'));
+  const el = document.getElementById('track-' + videoId);
+  if(el) el.classList.add('playing');
+  currentVideoId = videoId;
+  ytPlayer.loadVideoById(videoId);
+  document.getElementById('pbName').textContent = nome;
+  document.getElementById('pbArtist').textContent = artista;
+  document.getElementById('playerBar').classList.add('show');
+}
+function togglePlay(){
+  if(!ytReady || !currentVideoId) return;
+  if(isPlaying) ytPlayer.pauseVideo(); else ytPlayer.playVideo();
+}
+function fecharPlayer(){
+  if(ytPlayer && ytReady) ytPlayer.stopVideo();
+  document.getElementById('playerBar').classList.remove('show');
+  document.querySelectorAll('.track').forEach(t => t.classList.remove('playing'));
+  currentVideoId = null;
+}
 
 // init
 needle.style.left = '0%';
-renderCategory('funk');
+carregarCategoria('funk');
 </script>
 
 </body>
