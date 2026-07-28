@@ -340,6 +340,17 @@
     background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer; flex-shrink:0;
   }
   .pb-close:hover{ color: var(--pink-soft); }
+  .vol-wrap{ display:flex; align-items:center; gap:6px; flex-shrink:0; }
+  .vol-wrap input[type=range]{
+    -webkit-appearance:none; appearance:none;
+    width:90px; height:4px; border-radius:4px; background: var(--line); outline:none; cursor:pointer;
+  }
+  .vol-wrap input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background: var(--pink); cursor:pointer;
+  }
+  .vol-wrap input[type=range]::-moz-range-thumb{
+    width:14px; height:14px; border-radius:50%; background: var(--pink); border:none; cursor:pointer;
+  }
   #ytHiddenHolder{ position:absolute; width:1px; height:1px; overflow:hidden; opacity:0; pointer-events:none; }
 
   @media (max-width: 640px){
@@ -356,6 +367,7 @@
     .section-head h2{ font-size: 20px; }
     .gen-row select, .gen-row input, .gen-row button{ flex: 1 1 100%; }
     .player-bar{ padding: 10px 14px; }
+    .vol-wrap input[type=range]{ width: 60px; }
   }
 </style>
 </head>
@@ -441,6 +453,10 @@
     <div class="name" id="pbName">—</div>
     <div class="artist" id="pbArtist">—</div>
   </div>
+  <div class="vol-wrap" title="Volume">
+    <span id="volIcon">🔊</span>
+    <input type="range" id="volSlider" min="0" max="100" value="70" oninput="mudarVolume(this.value)">
+  </div>
   <span style="font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--pink-soft); border:1px solid var(--pink-dim); border-radius:6px; padding:4px 8px; flex-shrink:0;">● AO VIVO</span>
   <button class="pb-close" onclick="fecharPlayer()">✕</button>
 </div>
@@ -454,12 +470,12 @@ const CONFIG = {
 /* ========================================================= */
 
 const categoryQueries = {
-  funk:          "funk 2026 mais tocadas",
-  sertanejo:     "sertanejo 2026 mais tocadas",
-  rock:          "rock nacional e internacional mais tocadas",
-  pagode:        "pagode 2026 mais tocadas",
-  internacional: "top hits internacional 2026",
-  top:           "top músicas mais tocadas 2026"
+  funk:          ["funk 2026 mais tocadas", "funk hits 2026", "top funk brasil 2026", "funk automotivo 2026", "funk lançamento 2026"],
+  sertanejo:     ["sertanejo 2026 mais tocadas", "sertanejo universitário 2026", "top sertanejo 2026", "sertanejo raiz mais tocadas", "sertanejo lançamento 2026"],
+  rock:          ["rock nacional mais tocadas", "rock internacional clássicos", "rock 2026 hits", "rock anos 80 90 mais tocadas", "rock alternativo top"],
+  pagode:        ["pagode 2026 mais tocadas", "pagode romântico top", "roda de pagode hits", "pagode raiz mais tocadas", "pagode lançamento 2026"],
+  internacional: ["top hits internacional 2026", "billboard hits 2026", "pop internacional mais tocadas", "internacional hits atual", "top global songs 2026"],
+  top:           ["top músicas mais tocadas 2026 brasil", "top 100 brasil 2026", "as mais tocadas do brasil agora", "mais tocadas rádio 2026"]
 };
 const categoryTitles = {
   funk: "Funk — Mais Tocadas",
@@ -529,6 +545,15 @@ function renderTracks(items){
   `).join('');
 }
 
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 async function carregarCategoria(key, autoplay = true){
   currentCat = key;
   catTitle.textContent = categoryTitles[key];
@@ -540,12 +565,15 @@ async function carregarCategoria(key, autoplay = true){
     return;
   }
   renderLoading();
-  const items = await ytSearch(categoryQueries[key], 20);
+  // sorteia uma das variações de busca da categoria, pra não vir sempre a mesma sequência
+  const variantes = categoryQueries[key];
+  const termo = variantes[Math.floor(Math.random() * variantes.length)];
+  const items = await ytSearch(termo, 50);
   if(items === null){ renderEmpty('erro ao buscar — confira sua API key e a cota.'); return; }
-  catCount.textContent = `${items.length} na fila`;
-  queue = items;
-  renderTracks(items);
-  if(autoplay && items.length > 0) playAt(0);
+  queue = shuffle(items); // embaralha a ordem toda vez que entra na categoria
+  catCount.textContent = `${queue.length} na fila · sintonia: "${termo}"`;
+  renderTracks(queue);
+  if(autoplay && queue.length > 0) playAt(0);
 }
 
 function escapeAttr(s){ return (s || '').replace(/'/g, "\\'"); }
@@ -632,10 +660,15 @@ function onYouTubeIframeAPIReady(){
     height: '1', width: '1',
     playerVars: { autoplay: 0, controls: 0 },
     events: {
-      onReady: () => { ytReady = true; },
+      onReady: () => { ytReady = true; ytPlayer.setVolume(document.getElementById('volSlider').value); },
       onStateChange: onPlayerStateChange
     }
   });
+}
+function mudarVolume(v){
+  if(ytReady) ytPlayer.setVolume(v);
+  const icon = document.getElementById('volIcon');
+  icon.textContent = v == 0 ? '🔇' : (v < 50 ? '🔉' : '🔊');
 }
 function onPlayerStateChange(e){
   if(e.data === YT.PlayerState.PLAYING){ isPlaying = true; document.getElementById('pbToggle').textContent = '❚❚'; }
