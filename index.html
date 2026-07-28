@@ -19,6 +19,7 @@
     --line: #2a232b;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
+  html{ overflow-x:hidden; }
   body{
     background: var(--bg);
     color: var(--text);
@@ -223,14 +224,15 @@
 
   .grid{
     display:grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
     min-height: 80px;
   }
-  @media (max-width: 720px){ .grid{ grid-template-columns: 1fr; } }
+  @media (max-width: 720px){ .grid{ grid-template-columns: minmax(0,1fr); } }
 
   .track{
     display:flex; align-items:center; gap:10px;
+    min-width: 0;
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 12px;
@@ -439,6 +441,7 @@
     <div class="name" id="pbName">—</div>
     <div class="artist" id="pbArtist">—</div>
   </div>
+  <span style="font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--pink-soft); border:1px solid var(--pink-dim); border-radius:6px; padding:4px 8px; flex-shrink:0;">● AO VIVO</span>
   <button class="pb-close" onclick="fecharPlayer()">✕</button>
 </div>
 <div id="ytHiddenHolder"><div id="ytHiddenPlayer"></div></div>
@@ -516,17 +519,17 @@ function renderTracks(items){
   grid.innerHTML = items.map((t, i) => `
     <div class="track" id="track-${t.videoId}">
       <img class="thumb" src="${t.thumb}" alt="">
-      <div class="track-info" onclick="tocarFaixa('${t.videoId}', '${escapeAttr(t.title)}', '${escapeAttr(t.channel)}')">
+      <div class="track-info" onclick="tocarDaFila(${i})">
         <div class="name">${t.title}</div>
         <div class="artist">${t.channel}</div>
       </div>
       <button class="icon-btn copy-ic" title="Copiar comando pra colar no F8" onclick="copiarLinkFaixa(this, '${t.videoId}')">⧉</button>
-      <button class="icon-btn play-ic" title="Tocar" onclick="tocarFaixa('${t.videoId}', '${escapeAttr(t.title)}', '${escapeAttr(t.channel)}')">▶</button>
+      <button class="icon-btn play-ic" title="Tocar" onclick="tocarDaFila(${i})">▶</button>
     </div>
   `).join('');
 }
 
-async function carregarCategoria(key){
+async function carregarCategoria(key, autoplay = true){
   currentCat = key;
   catTitle.textContent = categoryTitles[key];
   freqDisplay.textContent = freqs[key] + ' FM';
@@ -537,10 +540,12 @@ async function carregarCategoria(key){
     return;
   }
   renderLoading();
-  const items = await ytSearch(categoryQueries[key], 8);
+  const items = await ytSearch(categoryQueries[key], 20);
   if(items === null){ renderEmpty('erro ao buscar — confira sua API key e a cota.'); return; }
-  catCount.textContent = `${items.length} resultados`;
+  catCount.textContent = `${items.length} na fila`;
+  queue = items;
   renderTracks(items);
+  if(autoplay && items.length > 0) playAt(0);
 }
 
 function escapeAttr(s){ return (s || '').replace(/'/g, "\\'"); }
@@ -555,7 +560,7 @@ function setActive(btn){
 buttons.forEach(btn => {
   btn.addEventListener('click', () => {
     setActive(btn);
-    carregarCategoria(btn.dataset.cat);
+    carregarCategoria(btn.dataset.cat, true);
   });
 });
 
@@ -571,7 +576,8 @@ async function doSearch(){
   renderLoading();
   const items = await ytSearch(q, 10);
   if(items === null){ renderEmpty('erro ao buscar — confira sua API key e a cota.'); return; }
-  catCount.textContent = `${items.length} resultados`;
+  catCount.textContent = `${items.length} na fila`;
+  queue = items;
   renderTracks(items);
 }
 document.getElementById('searchInput').addEventListener('keydown', e => { if(e.key === 'Enter') doSearch(); });
@@ -614,6 +620,8 @@ let ytPlayer = null;
 let ytReady = false;
 let currentVideoId = null;
 let isPlaying = false;
+let queue = [];
+let queueIndex = -1;
 
 const tag = document.createElement('script');
 tag.src = "https://www.youtube.com/iframe_api";
@@ -632,20 +640,31 @@ function onYouTubeIframeAPIReady(){
 function onPlayerStateChange(e){
   if(e.data === YT.PlayerState.PLAYING){ isPlaying = true; document.getElementById('pbToggle').textContent = '❚❚'; }
   if(e.data === YT.PlayerState.PAUSED){ isPlaying = false; document.getElementById('pbToggle').textContent = '▶'; }
-  if(e.data === YT.PlayerState.ENDED){ isPlaying = false; document.getElementById('pbToggle').textContent = '▶'; }
+  if(e.data === YT.PlayerState.ENDED){
+    // rádio 24h: acabou a música, já entra a próxima da fila (e volta pro início quando termina a lista)
+    playAt(queueIndex + 1);
+  }
 }
 
-function tocarFaixa(videoId, nome, artista){
-  if(!ytReady){ alert('Player carregando ainda, tenta de novo em 1 segundo.'); return; }
-  document.querySelectorAll('.track').forEach(t => t.classList.remove('playing'));
-  const el = document.getElementById('track-' + videoId);
+function tocarDaFila(index){
+  playAt(index);
+}
+
+function playAt(index){
+  if(!ytReady){ setTimeout(() => playAt(index), 400); return; } // player ainda carregando, tenta de novo rapidinho
+  if(queue.length === 0) return;
+  queueIndex = ((index % queue.length) + queue.length) % queue.length; // loop infinito na fila
+  const t = queue[queueIndex];
+  document.querySelectorAll('.track').forEach(el => el.classList.remove('playing'));
+  const el = document.getElementById('track-' + t.videoId);
   if(el) el.classList.add('playing');
-  currentVideoId = videoId;
-  ytPlayer.loadVideoById(videoId);
-  document.getElementById('pbName').textContent = nome;
-  document.getElementById('pbArtist').textContent = artista;
+  currentVideoId = t.videoId;
+  ytPlayer.loadVideoById(t.videoId);
+  document.getElementById('pbName').textContent = t.title;
+  document.getElementById('pbArtist').textContent = t.channel;
   document.getElementById('playerBar').classList.add('show');
 }
+
 function togglePlay(){
   if(!ytReady || !currentVideoId) return;
   if(isPlaying) ytPlayer.pauseVideo(); else ytPlayer.playVideo();
@@ -655,11 +674,12 @@ function fecharPlayer(){
   document.getElementById('playerBar').classList.remove('show');
   document.querySelectorAll('.track').forEach(t => t.classList.remove('playing'));
   currentVideoId = null;
+  queueIndex = -1;
 }
 
 // init
 needle.style.left = '0%';
-carregarCategoria('funk');
+carregarCategoria('funk', false); // não força autoplay logo na entrada (navegador bloqueia áudio sem clique antes)
 </script>
 
 </body>
