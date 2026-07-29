@@ -659,6 +659,32 @@ function copiarLinkFaixa(btn, videoId){
   });
 }
 
+/* ---- BRIDGE COM O APP DE RICH PRESENCE (MTA Músicas RPC, roda na bandeja do Windows) ---- */
+let mtaRpcSocket = null;
+let mtaRpcRetryTimer = null;
+function conectarRpcBridge(){
+  try{
+    mtaRpcSocket = new WebSocket('ws://localhost:17321');
+    mtaRpcSocket.onopen = () => {
+      if(mtaRpcRetryTimer){ clearInterval(mtaRpcRetryTimer); mtaRpcRetryTimer = null; }
+      if(isPlaying && queueIndex >= 0 && queue[queueIndex]){
+        enviarRpc({ type: 'now-playing', title: queue[queueIndex].title, artist: queue[queueIndex].channel });
+      }
+    };
+    mtaRpcSocket.onclose = () => {
+      mtaRpcSocket = null;
+      if(!mtaRpcRetryTimer) mtaRpcRetryTimer = setInterval(conectarRpcBridge, 5000);
+    };
+    mtaRpcSocket.onerror = () => {};
+  }catch(e){}
+}
+function enviarRpc(payload){
+  if(mtaRpcSocket && mtaRpcSocket.readyState === WebSocket.OPEN){
+    try{ mtaRpcSocket.send(JSON.stringify(payload)); }catch(e){}
+  }
+}
+conectarRpcBridge();
+
 /* ---- PLAYER "SÓ ÁUDIO" (usa o player oficial do YouTube, só escondido visualmente) ---- */
 let ytPlayer = null;
 let ytReady = false;
@@ -687,39 +713,15 @@ function mudarVolume(v){
   icon.textContent = v == 0 ? '🔇' : (v < 50 ? '🔉' : '🔊');
 }
 function onPlayerStateChange(e){
-  if(e.data === YT.PlayerState.PLAYING){ isPlaying = true; document.getElementById('pbToggle').textContent = '❚❚'; sendNowPlaying(true); }
-  if(e.data === YT.PlayerState.PAUSED){ isPlaying = false; document.getElementById('pbToggle').textContent = '▶'; sendNowPlaying(false); }
+  if(e.data === YT.PlayerState.PLAYING){
+    isPlaying = true; document.getElementById('pbToggle').textContent = '❚❚';
+    if(queueIndex >= 0 && queue[queueIndex]) enviarRpc({ type: 'now-playing', title: queue[queueIndex].title, artist: queue[queueIndex].channel });
+  }
+  if(e.data === YT.PlayerState.PAUSED){ isPlaying = false; document.getElementById('pbToggle').textContent = '▶'; enviarRpc({ type: 'paused' }); }
   if(e.data === YT.PlayerState.ENDED){
     // rádio 24h: acabou a música, já entra a próxima da fila (e volta pro início quando termina a lista)
     playAt(queueIndex + 1);
   }
-}
-
-/* ---- BRIDGE COM O APP LOCAL (Discord Rich Presence) ----
-   Se o app MTAMusicasRPC.exe estiver rodando na bandeja, ele sobe um
-   servidor WebSocket em ws://127.0.0.1:13377. O site conecta nele e avisa
-   o que está tocando. Se o app não estiver aberto, falha em silêncio —
-   o player continua funcionando normal. */
-let rpcSocket = null;
-function connectRPCBridge(){
-  try{
-    rpcSocket = new WebSocket('ws://127.0.0.1:13377');
-    rpcSocket.onclose = () => { rpcSocket = null; setTimeout(connectRPCBridge, 8000); };
-    rpcSocket.onerror = () => {};
-  }catch(e){ /* navegador sem suporte ou bloqueado, ignora */ }
-}
-connectRPCBridge();
-
-function sendRPC(data){
-  if(rpcSocket && rpcSocket.readyState === WebSocket.OPEN){
-    try{ rpcSocket.send(JSON.stringify(data)); }catch(e){}
-  }
-}
-
-function sendNowPlaying(playing){
-  const t = queue[queueIndex];
-  if(!t) return;
-  sendRPC({ type:'update', title: t.title, artist: t.channel, isPlaying: playing });
 }
 
 function tocarDaFila(index){
@@ -751,6 +753,7 @@ function fecharPlayer(){
   document.querySelectorAll('.track').forEach(t => t.classList.remove('playing'));
   currentVideoId = null;
   queueIndex = -1;
+  enviarRpc({ type: 'stopped' });
 }
 
 // init
